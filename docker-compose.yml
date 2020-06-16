@@ -1,0 +1,51 @@
+# se usa la version 2.4 en vez de 3.8 ya que se puede limitar recursos en docker-compose
+# si se ocupa swar se cambian las opciones por deploy:resource y se actualiza la version
+version: "2.4"
+
+volumes:
+  service_mariadb:
+    driver: local
+  service_redis:
+    driver: local
+
+networks:
+  red_mdb:
+    driver: bridge
+
+services:
+  service_mariadb:
+    image: mariadb:10.5.3
+    restart: on-failure
+    volumes:
+      - ./store:/var/lib/mysql:rw
+    shm_size: 256m
+    cpu_count: "1"
+    cpus: "0.5"
+    mem_limit: 256m
+    ports:
+      - "3306:3306"
+    networks:
+      - red_mdb
+    env_file:
+      - ./config_mdb.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+    depends_on:
+      - service_redis
+
+  service_redis:
+    image: redis:6.0.3
+    restart: on-failure
+    shm_size: 100M
+    cpu_count: "1"
+    cpus: "0.5"
+    mem_limit: 100m
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis:/data
+    networks:
+      - red_mdb
